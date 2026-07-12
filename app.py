@@ -7,9 +7,32 @@ import streamlit as st
 from datetime import datetime
 from openai import OpenAI
 import hashlib
+import os
+import json
 
 # Setup database for storage
 db = SqliteDb(db_file="agents.db")
+
+# Config file path
+CONFIG_FILE = "config.json"
+
+def load_config():
+    """Load config from file"""
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_config(config):
+    """Save config to file"""
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f)
+
+# Load saved config
+saved_config = load_config()
 
 # Initialize session state
 if 'history' not in st.session_state:
@@ -118,8 +141,23 @@ def main():
     # Sidebar
     with st.sidebar:
         st.header("⚙️ 设置")
-        openai_api_key = st.text_input("OpenAI API Key", type="password")
-        api_base_url = st.text_input("API Base URL", placeholder="https://api.openai.com/v1", value="https://api.openai.com/v1")
+        
+        # API Key with persistence
+        openai_api_key = st.text_input(
+            "OpenAI API Key", 
+            type="password",
+            value=saved_config.get("api_key", "")
+        )
+        api_base_url = st.text_input(
+            "API Base URL", 
+            placeholder="https://api.openai.com/v1",
+            value=saved_config.get("base_url", "https://api.openai.com/v1")
+        )
+        
+        # Save config button
+        if st.button("💾 保存配置", type="secondary"):
+            save_config({"api_key": openai_api_key, "base_url": api_base_url})
+            st.success("配置已保存！刷新页面后仍会保留。")
         
         st.divider()
         st.header("📋 Agent 信息")
@@ -216,13 +254,17 @@ def main():
                 用清晰的列表和表格展示结果。
                 """
                 
-                result = web_researcher.run(prompt, stream=False)
-                
-                st.subheader("📊 热点分析结果")
-                st.markdown(result.content)
-                
-                # Save to history
-                save_history("热点分析", industry, result.content)
+                try:
+                    result = web_researcher.run(prompt, stream=False)
+                    
+                    st.subheader("📊 热点分析结果")
+                    st.markdown(result.content)
+                    
+                    # Save to history
+                    save_history("热点分析", industry, result.content)
+                except Exception as e:
+                    st.error(f"分析失败：{str(e)}")
+                    st.info("提示：如果网络不稳定，建议使用英文关键词进行搜索")
     
     with tab3:
         st.header("内容日历规划")
@@ -233,6 +275,8 @@ def main():
         with col2:
             days = st.number_input("规划天数", min_value=7, max_value=30, value=14)
         
+        industry_cal = st.text_input("行业/领域", placeholder="例如：人工智能、电商、教育", key="cal_industry")
+        
         if st.button("📅 生成日历", type="primary"):
             if not openai_api_key:
                 st.error("请先输入 OpenAI API Key")
@@ -241,7 +285,7 @@ def main():
             with st.spinner("正在生成内容日历..."):
                 _, copywriter, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
                 prompt = f"""
-                请为"{industry}"行业创建{days}天的内容发布日历：
+                请为"{industry_cal}"行业创建{days}天的内容发布日历：
                 
                 从{start_date}开始，每天规划：
                 - 发布时间
@@ -259,7 +303,7 @@ def main():
                 st.markdown(result.content)
                 
                 # Save to history
-                save_history("内容日历", f"{industry} - {days}天", result.content)
+                save_history("内容日历", f"{industry_cal} - {days}天", result.content)
     
     with tab4:
         st.header("🌐 多语言翻译")
@@ -392,16 +436,14 @@ def main():
     with tab7:
         st.header("🔍 SEO 分析")
         
-        seo_url = st.text_input("输入网址或内容", placeholder="输入网址或粘贴文章内容进行SEO分析...")
-        seo_content = st.text_area("或直接输入文章内容", placeholder="粘贴文章内容...", height=150)
+        seo_content = st.text_area("输入文章内容进行SEO分析", placeholder="粘贴文章内容...", height=200)
         
         if st.button("🔍 开始分析", type="primary"):
             if not openai_api_key:
                 st.error("请先输入 OpenAI API Key")
                 return
             
-            input_content = seo_url if seo_url else seo_content
-            if not input_content:
+            if not seo_content:
                 st.warning("请输入内容")
                 return
             
@@ -410,7 +452,7 @@ def main():
                 prompt = f"""
                 请对以下内容进行全面的 SEO 分析：
                 
-                {input_content}
+                {seo_content}
                 
                 请提供：
                 1. **关键词分析**：核心关键词、长尾关键词建议
@@ -423,13 +465,16 @@ def main():
                 用清晰的结构展示，包含具体的优化建议。
                 """
                 
-                result = seo_expert.run(prompt, stream=False)
-                
-                st.subheader("📊 SEO 分析报告")
-                st.markdown(result.content)
-                
-                # Save to history
-                save_history("SEO分析", input_content[:100], result.content)
+                try:
+                    result = seo_expert.run(prompt, stream=False)
+                    
+                    st.subheader("📊 SEO 分析报告")
+                    st.markdown(result.content)
+                    
+                    # Save to history
+                    save_history("SEO分析", seo_content[:100], result.content)
+                except Exception as e:
+                    st.error(f"分析失败：{str(e)}")
     
     with tab8:
         st.header("📜 历史记录")
