@@ -118,15 +118,42 @@ def create_agents(api_key, base_url):
         markdown=True,
     )
 
+    video_scriptwriter = Agent(
+        name="Video Scriptwriter",
+        role="创作短视频脚本，包括口播稿、分镜脚本、带货文案",
+        model=OpenAIChat(**model_config),
+        db=db,
+        add_history_to_context=True,
+        markdown=True,
+    )
+
+    xiaohongshu_expert = Agent(
+        name="Xiaohongshu Expert",
+        role="创作小红书爆款笔记，擅长标题、正文、标签优化",
+        model=OpenAIChat(**model_config),
+        db=db,
+        add_history_to_context=True,
+        markdown=True,
+    )
+
+    english_polisher = Agent(
+        name="English Polisher",
+        role="润色英文内容，提升语法准确性、表达地道性和可读性",
+        model=OpenAIChat(**model_config),
+        db=db,
+        add_history_to_context=True,
+        markdown=True,
+    )
+
     content_team = Team(
         name="Content Creation Team",
         model=OpenAIChat(**model_config),
-        members=[web_researcher, copywriter, social_media, seo_expert, translator, data_analyst, image_describer],
+        members=[web_researcher, copywriter, social_media, seo_expert, translator, data_analyst, image_describer, video_scriptwriter, xiaohongshu_expert, english_polisher],
         debug_mode=True,
         markdown=True,
     )
 
-    return web_researcher, copywriter, social_media, seo_expert, translator, data_analyst, image_describer, content_team
+    return web_researcher, copywriter, social_media, seo_expert, translator, data_analyst, image_describer, video_scriptwriter, xiaohongshu_expert, english_polisher, content_team
 
 def main():
     st.set_page_config(
@@ -183,11 +210,17 @@ def main():
         **SEO Expert** - 搜索优化
         **Translator** - 多语言翻译
         **Data Analyst** - 数据分析
-        **Image Describer** - 图片描述
+        **Video Scriptwriter** - 视频脚本
+        **Xiaohongshu Expert** - 小红书爆款
+        **English Polisher** - 英文润色
         """)
     
     # Main content
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["📝 内容创作", "📊 热点分析", "📅 内容日历", "🌐 多语言翻译", "📈 数据分析", "🎨 图片生成", "🔍 SEO 分析", "📜 历史记录"])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+        "📝 内容创作", "📊 热点分析", "📅 内容日历", "🌐 多语言翻译", 
+        "📈 数据分析", "🎬 视频脚本", "📱 小红书爆款", "🔤 英文润色", 
+        "🔍 SEO 分析", "📜 历史记录"
+    ])
     
     with tab1:
         st.header("创建内容")
@@ -210,7 +243,7 @@ def main():
                 return
             
             with st.spinner("AI Agent 团队正在创作中..."):
-                _, _, _, _, _, _, _, content_team = create_agents(openai_api_key, api_base_url)
+                _, _, _, _, _, _, _, _, _, _, content_team = create_agents(openai_api_key, api_base_url)
                 prompt = f"""
                 请为以下内容创建完整的创作方案：
                 
@@ -257,7 +290,7 @@ def main():
                 return
             
             with st.spinner("正在分析热点..."):
-                web_researcher, _, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                web_researcher, _, _, _, _, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
                 prompt = f"""
                 请分析"{industry}"行业的当前热点和趋势：
                 
@@ -298,7 +331,7 @@ def main():
                 return
             
             with st.spinner("正在生成内容日历..."):
-                _, copywriter, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                _, copywriter, _, _, _, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
                 prompt = f"""
                 请为"{industry_cal}"行业创建{days}天的内容发布日历：
                 
@@ -341,7 +374,7 @@ def main():
                 return
             
             with st.spinner("翻译中..."):
-                _, _, _, _, translator, _, _, _ = create_agents(openai_api_key, api_base_url)
+                _, _, _, _, translator, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
                 prompt = f"请将以下{source_lang}内容翻译为{target_lang}，保持原文的风格和语气：\n\n{source_text}"
                 result = translator.run(prompt, stream=False)
                 
@@ -375,7 +408,7 @@ def main():
                 return
             
             with st.spinner("分析中..."):
-                _, _, _, _, _, data_analyst, _, _ = create_agents(openai_api_key, api_base_url)
+                _, _, _, _, _, data_analyst, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
                 prompt = f"""
                 请对以下内容进行{analysis_type}：
                 
@@ -398,57 +431,180 @@ def main():
                 save_history("数据分析", analysis_type, result.content)
     
     with tab6:
-        st.header("🎨 AI 图片生成")
+        st.header("🎬 视频脚本创作")
         
-        # Check if API provider supports image generation
-        if "api2d" in api_base_url.lower():
-            st.warning("⚠️ API2D 不支持图片生成功能（仅支持聊天和嵌入）")
-            st.info("如需使用图片生成，请配置支持 DALL-E 的 API，例如：\n- OpenAI 官方 API\n- 其他支持 /images/generations 的代理")
-        else:
-            image_prompt = st.text_area("描述你想生成的图片", placeholder="例如：一只可爱的猫咪坐在窗台上，阳光洒在身上，水彩画风格...", height=100)
+        video_topic = st.text_input("视频主题", placeholder="例如：AI写作助手产品介绍")
+        video_type = st.selectbox("视频类型", ["口播稿", "分镜脚本", "带货文案", "教程脚本", "故事脚本"])
+        video_platform = st.selectbox("目标平台", ["抖音", "快手", "B站", "YouTube", "视频号"])
+        video_duration = st.selectbox("视频时长", ["15秒", "30秒", "1分钟", "3分钟", "5分钟"])
+        
+        video_details = st.text_area("补充说明", placeholder="视频风格、目标受众、需要包含的要点等...", height=100)
+        
+        if st.button("🎬 生成脚本", type="primary"):
+            if not openai_api_key:
+                st.error("请先输入 OpenAI API Key")
+                return
             
-            col1, col2 = st.columns(2)
-            with col1:
-                image_size = st.selectbox("图片尺寸", ["1024x1024", "1024x1792", "1792x1024"])
-            with col2:
-                image_quality = st.selectbox("图片质量", ["standard", "hd"])
+            if not video_topic:
+                st.warning("请输入视频主题")
+                return
             
-            if st.button("🎨 生成图片", type="primary"):
-                if not openai_api_key:
-                    st.error("请先输入 OpenAI API Key")
-                    return
+            with st.spinner("生成视频脚本中..."):
+                _, _, _, _, _, _, _, video_scriptwriter, _, _, _ = create_agents(openai_api_key, api_base_url)
+                prompt = f"""
+                请为以下视频创作{video_type}：
                 
-                if not image_prompt:
-                    st.warning("请输入图片描述")
-                    return
+                主题：{video_topic}
+                平台：{video_platform}
+                时长：{video_duration}
+                补充说明：{video_details}
                 
-                with st.spinner("生成图片中..."):
-                    try:
-                        client = OpenAI(api_key=openai_api_key, base_url=api_base_url, timeout=180.0)
-                        response = client.images.generate(
-                            model="dall-e-3",
-                            prompt=image_prompt,
-                            size=image_size,
-                            quality=image_quality,
-                            n=1,
-                        )
-                        
-                        image_url = response.data[0].url
-                        revised_prompt = response.data[0].revised_prompt
-                        
-                        st.image(image_url, caption="AI 生成的图片", use_container_width=True)
-                        st.info(f"**优化后的提示词：** {revised_prompt}")
-                        
-                        # Save to history
-                        save_history("图片生成", image_prompt, f"已生成图片: {image_url[:50]}...")
-                        
-                        # Download image
-                        st.markdown(f"[📥 下载图片]({image_url})")
-                        
-                    except Exception as e:
-                        st.error(f"生成图片时出错：{str(e)}")
+                请提供：
+                1. 开场钩子（前3秒抓住观众）
+                2. 主体内容（分段展示）
+                3. 结尾CTA（引导互动）
+                4. 配音建议（语速、语调）
+                5. 画面建议（如有分镜）
+                
+                确保脚本口语化、有节奏感、适合{video_platform}平台风格。
+                """
+                
+                try:
+                    result = video_scriptwriter.run(prompt, stream=False)
+                    
+                    st.subheader("🎬 视频脚本")
+                    st.markdown(result.content)
+                    
+                    st.download_button(
+                        label="📥 下载脚本",
+                        data=result.content,
+                        file_name=f"视频脚本_{video_topic}_{datetime.now().strftime('%Y%m%d')}.md",
+                        mime="text/markdown"
+                    )
+                    
+                    save_history("视频脚本", f"{video_topic} - {video_type}", result.content)
+                except Exception as e:
+                    st.error(f"生成失败：{str(e)}")
     
     with tab7:
+        st.header("📱 小红书爆款笔记")
+        
+        xhs_topic = st.text_input("笔记主题", placeholder="例如：平价好物推荐、旅行攻略、美食探店")
+        xhs_type = st.selectbox("笔记类型", ["种草推荐", "经验分享", "教程攻略", "测评对比", "日常分享"])
+        xhs_style = st.selectbox("风格", ["真诚分享", "干货满满", "轻松活泼", "专业权威", "搞笑幽默"])
+        
+        xhs_keywords = st.text_input("关键词（可选）", placeholder="例如：平价、学生党、新手友好")
+        xhs_details = st.text_area("补充说明", placeholder="产品特点、使用体验、目标人群等...", height=100)
+        
+        if st.button("📱 生成爆款笔记", type="primary"):
+            if not openai_api_key:
+                st.error("请先输入 OpenAI API Key")
+                return
+            
+            if not xhs_topic:
+                st.warning("请输入笔记主题")
+                return
+            
+            with st.spinner("生成小红书爆款笔记中..."):
+                _, _, _, _, _, _, _, _, xiaohongshu_expert, _, _ = create_agents(openai_api_key, api_base_url)
+                prompt = f"""
+                请为小红书创作一篇爆款{xhs_type}笔记：
+                
+                主题：{xhs_topic}
+                风格：{xhs_style}
+                关键词：{xhs_keywords}
+                补充说明：{xhs_details}
+                
+                请提供：
+                1. **爆款标题**（3个备选，含emoji，18字以内）
+                2. **正文内容**（800-1200字，分段清晰）
+                3. **标签推荐**（15-20个相关标签）
+                4. **封面建议**（图片风格和构图）
+                5. **发布时间建议**
+                
+                要求：
+                - 标题吸引眼球，有数字或痛点
+                - 正文有干货、有故事、有互动
+                - 多用emoji，排版清晰
+                - 结尾引导点赞收藏
+                """
+                
+                try:
+                    result = xiaohongshu_expert.run(prompt, stream=False)
+                    
+                    st.subheader("📱 小红书爆款笔记")
+                    st.markdown(result.content)
+                    
+                    st.download_button(
+                        label="📥 下载笔记",
+                        data=result.content,
+                        file_name=f"小红书笔记_{xhs_topic}_{datetime.now().strftime('%Y%m%d')}.md",
+                        mime="text/markdown"
+                    )
+                    
+                    save_history("小红书笔记", xhs_topic, result.content)
+                except Exception as e:
+                    st.error(f"生成失败：{str(e)}")
+    
+    with tab8:
+        st.header("🔤 英文润色")
+        
+        en_content = st.text_area("输入需要润色的英文内容", placeholder="Paste your English text here...", height=200)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            en_style = st.selectbox("润色风格", ["学术正式", "商务专业", "日常交流", "创意写作", "技术文档"])
+        with col2:
+            en_level = st.selectbox("润色程度", ["轻度修改（修正语法）", "中度润色（优化表达）", "重度改写（提升质量）"])
+        
+        en_focus = st.text_input("特殊要求（可选）", placeholder="例如：增加专业术语、简化表达、提升可读性")
+        
+        if st.button("🔤 开始润色", type="primary"):
+            if not openai_api_key:
+                st.error("请先输入 OpenAI API Key")
+                return
+            
+            if not en_content:
+                st.warning("请输入需要润色的英文内容")
+                return
+            
+            with st.spinner("润色中..."):
+                _, _, _, _, _, _, _, _, _, english_polisher, _ = create_agents(openai_api_key, api_base_url)
+                prompt = f"""
+                请对以下英文内容进行{en_level}：
+                
+                {en_content}
+                
+                润色风格：{en_style}
+                特殊要求：{en_focus}
+                
+                请提供：
+                1. **润色后的内容**（完整版本）
+                2. **修改说明**（列出主要修改点和原因）
+                3. **语法检查**（如有错误请指出）
+                4. **表达建议**（提升地道性的建议）
+                
+                确保保持原意，同时提升表达质量。
+                """
+                
+                try:
+                    result = english_polisher.run(prompt, stream=False)
+                    
+                    st.subheader("🔤 润色结果")
+                    st.markdown(result.content)
+                    
+                    st.download_button(
+                        label="📥 下载润色结果",
+                        data=result.content,
+                        file_name=f"polished_{datetime.now().strftime('%Y%m%d')}.md",
+                        mime="text/markdown"
+                    )
+                    
+                    save_history("英文润色", en_content[:100], result.content)
+                except Exception as e:
+                    st.error(f"润色失败：{str(e)}")
+    
+    with tab9:
         st.header("🔍 SEO 分析")
         
         seo_url = st.text_input("输入网址（可选）", placeholder="例如：https://example.com")
@@ -471,7 +627,7 @@ def main():
                 return
             
             with st.spinner("SEO 分析中..."):
-                _, _, _, seo_expert, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                _, _, _, seo_expert, _, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
                 prompt = f"""
                 请对以下内容进行全面的 SEO 分析：
                 
@@ -499,7 +655,7 @@ def main():
                 except Exception as e:
                     st.error(f"分析失败：{str(e)}")
     
-    with tab8:
+    with tab10:
         st.header("📜 历史记录")
         
         if st.session_state.history:
