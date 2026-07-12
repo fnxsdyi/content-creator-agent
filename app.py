@@ -20,7 +20,7 @@ def load_config():
     """Load config from file"""
     if os.path.exists(CONFIG_FILE):
         try:
-            with open(CONFIG_FILE, "r") as f:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
             return {}
@@ -28,8 +28,8 @@ def load_config():
 
 def save_config(config):
     """Save config to file"""
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config, f)
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False)
 
 # Load saved config
 saved_config = load_config()
@@ -143,21 +143,36 @@ def main():
         st.header("⚙️ 设置")
         
         # API Key with persistence
+        api_key_value = saved_config.get("api_key", "")
+        base_url_value = saved_config.get("base_url", "https://api.openai.com/v1")
+        
         openai_api_key = st.text_input(
             "OpenAI API Key", 
             type="password",
-            value=saved_config.get("api_key", "")
+            value=api_key_value,
+            key="api_key_input"
         )
         api_base_url = st.text_input(
             "API Base URL", 
             placeholder="https://api.openai.com/v1",
-            value=saved_config.get("base_url", "https://api.openai.com/v1")
+            value=base_url_value,
+            key="base_url_input"
         )
         
-        # Save config button
+        # Auto-save config when values change
+        if openai_api_key != api_key_value or api_base_url != base_url_value:
+            save_config({"api_key": openai_api_key, "base_url": api_base_url})
+        
+        # Manual save button
         if st.button("💾 保存配置", type="secondary"):
             save_config({"api_key": openai_api_key, "base_url": api_base_url})
-            st.success("配置已保存！刷新页面后仍会保留。")
+            st.success("配置已保存！")
+        
+        # Show status
+        if openai_api_key:
+            st.success("✅ API Key 已配置")
+        else:
+            st.warning("⚠️ 请配置 API Key")
         
         st.divider()
         st.header("📋 Agent 信息")
@@ -436,15 +451,23 @@ def main():
     with tab7:
         st.header("🔍 SEO 分析")
         
-        seo_content = st.text_area("输入文章内容进行SEO分析", placeholder="粘贴文章内容...", height=200)
+        seo_url = st.text_input("输入网址（可选）", placeholder="例如：https://example.com")
+        seo_content = st.text_area("或直接输入文章内容进行SEO分析", placeholder="粘贴文章内容...", height=200)
         
         if st.button("🔍 开始分析", type="primary"):
             if not openai_api_key:
                 st.error("请先输入 OpenAI API Key")
                 return
             
-            if not seo_content:
-                st.warning("请输入内容")
+            # Combine URL and content for analysis
+            input_content = ""
+            if seo_url:
+                input_content += f"网址：{seo_url}\n\n"
+            if seo_content:
+                input_content += seo_content
+            
+            if not input_content:
+                st.warning("请输入网址或文章内容")
                 return
             
             with st.spinner("SEO 分析中..."):
@@ -452,7 +475,7 @@ def main():
                 prompt = f"""
                 请对以下内容进行全面的 SEO 分析：
                 
-                {seo_content}
+                {input_content}
                 
                 请提供：
                 1. **关键词分析**：核心关键词、长尾关键词建议
@@ -472,7 +495,7 @@ def main():
                     st.markdown(result.content)
                     
                     # Save to history
-                    save_history("SEO分析", seo_content[:100], result.content)
+                    save_history("SEO分析", input_content[:100], result.content)
                 except Exception as e:
                     st.error(f"分析失败：{str(e)}")
     
