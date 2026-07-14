@@ -39,110 +39,68 @@ def save_history(action_type, input_data, output_data):
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
-def create_agents(api_key, base_url):
-    """Create agents with API configuration"""
+def get_agents(api_key, base_url):
+    """Get or create cached agents. Avoids recreating on every interaction."""
+    cache_key = f"{api_key}_{base_url}"
+    if "agents" in st.session_state and st.session_state.get("agents_key") == cache_key:
+        return st.session_state.agents
+
     model_config = {"id": "gpt-4o", "api_key": api_key, "base_url": base_url}
-    
+
     web_researcher = Agent(
-        name="Web Researcher",
-        role="搜索网络热点和趋势信息",
-        model=OpenAIChat(**model_config),
-        tools=[DuckDuckGoTools()],
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="Web Researcher", role="搜索网络热点和趋势信息",
+        model=OpenAIChat(**model_config), tools=[DuckDuckGoTools()],
+        db=db, add_history_to_context=True, markdown=True,
     )
-
     copywriter = Agent(
-        name="Copywriter",
-        role="创建吸引人的文案和标题",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="Copywriter", role="创建吸引人的文案和标题",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
-
     social_media = Agent(
-        name="Social Media Expert",
-        role="优化内容适合不同社交平台",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="Social Media Expert", role="优化内容适合不同社交平台",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
-
     seo_expert = Agent(
-        name="SEO Expert",
-        role="优化内容的搜索排名和关键词",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="SEO Expert", role="优化内容的搜索排名和关键词",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
-
     translator = Agent(
-        name="Translator",
-        role="专业翻译，支持中英日韩等多种语言互译",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="Translator", role="专业翻译，支持中英日韩等多种语言互译",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
-
     data_analyst = Agent(
-        name="Data Analyst",
-        role="分析数据趋势，生成数据报告和可视化建议",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="Data Analyst", role="分析数据趋势，生成数据报告和可视化建议",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
-
-    image_describer = Agent(
-        name="Image Describer",
-        role="描述图片内容，生成图片标题和Alt文本",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
-    )
-
     video_scriptwriter = Agent(
-        name="Video Scriptwriter",
-        role="创作短视频脚本，包括口播稿、分镜脚本、带货文案",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="Video Scriptwriter", role="创作短视频脚本，包括口播稿、分镜脚本、带货文案",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
-
     xiaohongshu_expert = Agent(
-        name="Xiaohongshu Expert",
-        role="创作小红书爆款笔记，擅长标题、正文、标签优化",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="Xiaohongshu Expert", role="创作小红书爆款笔记，擅长标题、正文、标签优化",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
-
     english_polisher = Agent(
-        name="English Polisher",
-        role="润色英文内容，提升语法准确性、表达地道性和可读性",
-        model=OpenAIChat(**model_config),
-        db=db,
-        add_history_to_context=True,
-        markdown=True,
+        name="English Polisher", role="润色英文内容，提升语法准确性、表达地道性和可读性",
+        model=OpenAIChat(**model_config), db=db, add_history_to_context=True, markdown=True,
     )
 
     content_team = Team(
-        name="Content Creation Team",
-        model=OpenAIChat(**model_config),
-        members=[web_researcher, copywriter, social_media, seo_expert, translator, data_analyst, image_describer, video_scriptwriter, xiaohongshu_expert, english_polisher],
-        debug_mode=True,
+        name="Content Creation Team", model=OpenAIChat(**model_config),
+        members=[web_researcher, copywriter, social_media, seo_expert, translator, data_analyst, video_scriptwriter, xiaohongshu_expert, english_polisher],
         markdown=True,
     )
 
-    return web_researcher, copywriter, social_media, seo_expert, translator, data_analyst, image_describer, video_scriptwriter, xiaohongshu_expert, english_polisher, content_team
+    agents = {
+        "web_researcher": web_researcher, "copywriter": copywriter,
+        "social_media": social_media, "seo_expert": seo_expert,
+        "translator": translator, "data_analyst": data_analyst,
+        "video_scriptwriter": video_scriptwriter, "xiaohongshu_expert": xiaohongshu_expert,
+        "english_polisher": english_polisher, "content_team": content_team,
+    }
+    st.session_state.agents = agents
+    st.session_state.agents_key = cache_key
+    return agents
 
 def main():
     st.set_page_config(
@@ -221,9 +179,10 @@ def main():
             if not openai_api_key:
                 st.error("请先输入 OpenAI API Key")
                 return
-            
+
             with st.spinner("AI Agent 团队正在创作中..."):
-                _, _, _, _, _, _, _, _, _, _, content_team = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                content_team = agents["content_team"]
                 prompt = f"""
                 请为以下内容创建完整的创作方案：
                 
@@ -270,7 +229,8 @@ def main():
                 return
             
             with st.spinner("正在分析热点..."):
-                web_researcher, _, _, _, _, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                web_researcher = agents["web_researcher"]
                 prompt = f"""
                 请分析"{industry}"行业的当前热点和趋势：
                 
@@ -311,7 +271,8 @@ def main():
                 return
             
             with st.spinner("正在生成内容日历..."):
-                _, copywriter, _, _, _, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                copywriter = agents["copywriter"]
                 prompt = f"""
                 请为"{industry_cal}"行业创建{days}天的内容发布日历：
                 
@@ -325,13 +286,15 @@ def main():
                 用表格形式展示，并确保内容有节奏感（不要每天都发硬广）。
                 """
                 
-                result = copywriter.run(prompt, stream=False)
-                
-                st.subheader("📅 内容日历")
-                st.markdown(result.content)
-                
-                # Save to history
-                save_history("内容日历", f"{industry_cal} - {days}天", result.content)
+                try:
+                    result = copywriter.run(prompt, stream=False)
+
+                    st.subheader("📅 内容日历")
+                    st.markdown(result.content)
+
+                    save_history("内容日历", f"{industry_cal} - {days}天", result.content)
+                except Exception as e:
+                    st.error(f"生成失败：{str(e)}")
     
     with tab4:
         st.header("🌐 多语言翻译")
@@ -354,7 +317,8 @@ def main():
                 return
             
             with st.spinner("翻译中..."):
-                _, _, _, _, translator, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                translator = agents["translator"]
                 prompt = f"请将以下{source_lang}内容翻译为{target_lang}，保持原文的风格和语气：\n\n{source_text}"
                 result = translator.run(prompt, stream=False)
                 
@@ -388,7 +352,8 @@ def main():
                 return
             
             with st.spinner("分析中..."):
-                _, _, _, _, _, data_analyst, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                data_analyst = agents["data_analyst"]
                 prompt = f"""
                 请对以下内容进行{analysis_type}：
                 
@@ -430,7 +395,8 @@ def main():
                 return
             
             with st.spinner("生成视频脚本中..."):
-                _, _, _, _, _, _, _, video_scriptwriter, _, _, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                video_scriptwriter = agents["video_scriptwriter"]
                 prompt = f"""
                 请为以下视频创作{video_type}：
                 
@@ -486,7 +452,8 @@ def main():
                 return
             
             with st.spinner("生成小红书爆款笔记中..."):
-                _, _, _, _, _, _, _, _, xiaohongshu_expert, _, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                xiaohongshu_expert = agents["xiaohongshu_expert"]
                 prompt = f"""
                 请为小红书创作一篇爆款{xhs_type}笔记：
                 
@@ -549,7 +516,8 @@ def main():
                 return
             
             with st.spinner("润色中..."):
-                _, _, _, _, _, _, _, _, _, english_polisher, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                english_polisher = agents["english_polisher"]
                 prompt = f"""
                 请对以下英文内容进行{en_level}：
                 
@@ -607,7 +575,8 @@ def main():
                 return
             
             with st.spinner("SEO 分析中..."):
-                _, _, _, seo_expert, _, _, _, _, _, _, _ = create_agents(openai_api_key, api_base_url)
+                agents = get_agents(openai_api_key, api_base_url)
+                seo_expert = agents["seo_expert"]
                 prompt = f"""
                 请对以下内容进行全面的 SEO 分析：
                 
