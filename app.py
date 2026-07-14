@@ -470,11 +470,20 @@ def main():
 
         st.header(t("settings"))
 
-        api_key_value = saved_config.get("api_key", "")
-        base_url_value = saved_config.get("base_url", "https://oa.api2d.net")
+        # Persist API key across reruns (e.g. language switch)
+        if "api_key" not in st.session_state:
+            st.session_state.api_key = saved_config.get("api_key", "")
+        if "base_url" not in st.session_state:
+            st.session_state.base_url = saved_config.get("base_url", "https://oa.api2d.net")
 
-        openai_api_key = st.text_input(t("api_key_label"), type="password", value=api_key_value, key="api_key_input", placeholder=t("api_key_placeholder"))
-        api_base_url = st.text_input(t("base_url_label"), placeholder="https://oa.api2d.net", value=base_url_value, key="base_url_input")
+        openai_api_key = st.text_input(t("api_key_label"), type="password", value=st.session_state.api_key, key="api_key_input", placeholder=t("api_key_placeholder"))
+        api_base_url = st.text_input(t("base_url_label"), placeholder="https://oa.api2d.net", value=st.session_state.base_url, key="base_url_input")
+
+        # Save to session_state on change
+        if openai_api_key != st.session_state.api_key:
+            st.session_state.api_key = openai_api_key
+        if api_base_url != st.session_state.base_url:
+            st.session_state.base_url = api_base_url
 
         if openai_api_key:
             st.success(t("api_configured"))
