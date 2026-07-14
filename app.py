@@ -118,7 +118,7 @@ def main():
         
         # API Key with persistence
         api_key_value = saved_config.get("api_key", "")
-        base_url_value = saved_config.get("base_url", "https://api.openai.com/v1")
+        base_url_value = saved_config.get("base_url", "https://oa.api2d.net")
         
         openai_api_key = st.text_input(
             "OpenAI API Key", 
@@ -320,20 +320,22 @@ def main():
                 agents = get_agents(openai_api_key, api_base_url)
                 translator = agents["translator"]
                 prompt = f"请将以下{source_lang}内容翻译为{target_lang}，保持原文的风格和语气：\n\n{source_text}"
-                result = translator.run(prompt, stream=False)
-                
-                st.subheader("翻译结果")
-                st.text_area("译文", value=result.content, height=200)
-                
-                # Save to history
-                save_history("多语言翻译", f"{source_lang} → {target_lang}", result.content)
-                
-                st.download_button(
-                    label="📥 下载译文",
-                    data=result.content,
-                    file_name=f"translation_{datetime.now().strftime('%Y%m%d')}.txt",
-                    mime="text/plain"
-                )
+                try:
+                    result = translator.run(prompt, stream=False)
+
+                    st.subheader("翻译结果")
+                    st.text_area("译文", value=result.content, height=200)
+
+                    save_history("多语言翻译", f"{source_lang} → {target_lang}", result.content)
+
+                    st.download_button(
+                        label="📥 下载译文",
+                        data=result.content,
+                        file_name=f"translation_{datetime.now().strftime('%Y%m%d')}.txt",
+                        mime="text/plain"
+                    )
+                except Exception as e:
+                    st.error(f"翻译失败：{str(e)}")
     
     with tab5:
         st.header("📈 数据分析")
@@ -356,24 +358,26 @@ def main():
                 data_analyst = agents["data_analyst"]
                 prompt = f"""
                 请对以下内容进行{analysis_type}：
-                
+
                 {data_text}
-                
+
                 请提供：
                 1. 关键发现
                 2. 数据解读
                 3. 趋势/模式识别
                 4. 可执行建议
-                
+
                 用清晰的结构和表格展示结果。
                 """
-                result = data_analyst.run(prompt, stream=False)
-                
-                st.subheader("📊 分析报告")
-                st.markdown(result.content)
-                
-                # Save to history
-                save_history("数据分析", analysis_type, result.content)
+                try:
+                    result = data_analyst.run(prompt, stream=False)
+
+                    st.subheader("📊 分析报告")
+                    st.markdown(result.content)
+
+                    save_history("数据分析", analysis_type, result.content)
+                except Exception as e:
+                    st.error(f"分析失败：{str(e)}")
     
     with tab6:
         st.header("🎬 视频脚本创作")
