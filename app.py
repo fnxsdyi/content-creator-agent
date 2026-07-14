@@ -16,10 +16,10 @@ def load_config():
     try:
         return {
             "api_key": st.secrets.get("api_key", ""),
-            "base_url": st.secrets.get("base_url", "https://api.openai.com/v1"),
+            "base_url": st.secrets.get("base_url", "https://api2d.com/v1"),
         }
     except FileNotFoundError:
-        return {"api_key": "", "base_url": "https://api.openai.com/v1"}
+        return {"api_key": "", "base_url": "https://api2d.com/v1"}
 
 saved_config = load_config()
 
@@ -169,8 +169,8 @@ def main():
             key="api_key_input"
         )
         api_base_url = st.text_input(
-            "API Base URL", 
-            placeholder="https://api.openai.com/v1",
+            "API Base URL",
+            placeholder="https://api2d.com/v1",
             value=base_url_value,
             key="base_url_input"
         )
