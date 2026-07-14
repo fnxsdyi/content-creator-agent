@@ -5,35 +5,22 @@ from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.db.sqlite import SqliteDb
 import streamlit as st
 from datetime import datetime
-from openai import OpenAI
 import hashlib
-import os
-import json
-import base64
-from io import BytesIO
 
 # Setup database for storage
 db = SqliteDb(db_file="agents.db")
 
-# Config file path
-CONFIG_FILE = "config.json"
-
+# Load config from Streamlit secrets (preferred) or fallback to empty
 def load_config():
-    """Load config from file"""
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
+    """Load config from Streamlit secrets or empty defaults"""
+    try:
+        return {
+            "api_key": st.secrets.get("api_key", ""),
+            "base_url": st.secrets.get("base_url", "https://api.openai.com/v1"),
+        }
+    except FileNotFoundError:
+        return {"api_key": "", "base_url": "https://api.openai.com/v1"}
 
-def save_config(config):
-    """Save config to file"""
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False)
-
-# Load saved config
 saved_config = load_config()
 
 # Initialize session state
@@ -51,20 +38,6 @@ def save_history(action_type, input_data, output_data):
         "output": output_data[:200] + "..." if len(output_data) > 200 else output_data,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
-
-def text_to_pdf(text_content, filename="output.pdf"):
-    """Convert text to PDF (simplified version)"""
-    try:
-        from fpdf import FPDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        # Handle Chinese characters
-        for line in text_content.split('\n'):
-            pdf.cell(0, 10, txt=line.encode('latin-1', 'replace').decode('latin-1'), ln=True)
-        return pdf.output(dest='S').encode('latin-1')
-    except ImportError:
-        return None
 
 def create_agents(api_key, base_url):
     """Create agents with API configuration"""
@@ -201,15 +174,6 @@ def main():
             value=base_url_value,
             key="base_url_input"
         )
-        
-        # Auto-save config when values change
-        if openai_api_key != api_key_value or api_base_url != base_url_value:
-            save_config({"api_key": openai_api_key, "base_url": api_base_url})
-        
-        # Manual save button
-        if st.button("💾 保存配置", type="secondary"):
-            save_config({"api_key": openai_api_key, "base_url": api_base_url})
-            st.success("配置已保存！")
         
         # Show status
         if openai_api_key:
