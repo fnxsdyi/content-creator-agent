@@ -571,9 +571,9 @@ def main():
         col1, col2 = st.columns(2)
         lang_list = ["中文", "English", "日本語", "한국어", "Français", "Deutsch", "Español"]
         with col1:
-            source_lang = st.selectbox(t("source_lang"), lang_list)
+            source_lang = st.selectbox(t("source_lang"), lang_list, index=0)
         with col2:
-            target_lang = st.selectbox(t("target_lang"), lang_list)
+            target_lang = st.selectbox(t("target_lang"), lang_list, index=1)
         source_text = st.text_area(t("source_text_label"), placeholder=t("source_text_placeholder"), height=150)
         if st.button(t("btn_translate"), type="primary"):
             if not openai_api_key:
@@ -582,9 +582,9 @@ def main():
                 st.warning(t("error_input_required")); return
             with st.spinner(t("translating")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f"Translate the following {source_lang} text to {target_lang}, preserving the original style and tone:\n\n{source_text}"
+                p = f"Translate the following {source_lang} text to {target_lang}, preserving the original style and tone:\n\n{source_text}"
                 try:
-                    result = agents["translator"].run(prompt, stream=False)
+                    result = agents["translator"].run(p, stream=False)
                     st.subheader(t("translate_result"))
                     st.text_area(t("translation_label"), value=result.content, height=200)
                     save_history(t("tab4").split(" ", 1)[-1], f"{source_lang} → {target_lang}", result.content)
