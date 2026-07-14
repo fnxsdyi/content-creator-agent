@@ -319,6 +319,47 @@ def t(key: str, **kwargs) -> str:
     text = T.get(lang, T["en"]).get(key, T["en"].get(key, key))
     return text.format(**kwargs) if kwargs else text
 
+# Prompt templates — zh/en pairs for each feature
+P = {
+    "create": {
+        "zh": "请为以下内容创建完整的创作方案：\n\n主题：{topic}\n平台：{platform}\n内容类型：{content_type}\n语气风格：{tone}\n补充信息：{additional_info}\n\n请按以下步骤协作：\n1. Web Researcher: 先搜索相关热点和趋势\n2. Copywriter: 根据搜索结果创作文案\n3. Social Media Expert: 优化为适合{platform}的形式\n4. SEO Expert: 添加SEO优化建议\n\n最终输出完整的、可直接使用的{content_type}内容。",
+        "en": "Create a complete content plan:\n\nTopic: {topic}\nPlatform: {platform}\nType: {content_type}\nTone: {tone}\nAdditional: {additional_info}\n\nCollaborate:\n1. Web Researcher: search trends\n2. Copywriter: write copy\n3. Social Media Expert: optimize for {platform}\n4. SEO Expert: add SEO suggestions\n\nOutput ready-to-use {content_type} content.",
+    },
+    "trend": {
+        "zh": "请分析\"{industry}\"行业的当前热点和趋势：\n\n1. 搜索最新的行业动态\n2. 总结5-10个关键热点\n3. 分析每个热点的传播潜力\n4. 给出内容创作建议\n\n用清晰的列表和表格展示结果。",
+        "en": 'Analyze current trends in the "{industry}" industry:\n1. Search latest industry news\n2. Summarize 5-10 key trends\n3. Analyze viral potential\n4. Give content creation suggestions\nUse clear lists and tables.',
+    },
+    "calendar": {
+        "zh": "请为\"{industry_cal}\"行业创建{days}天的内容发布日历：\n\n从{start_date}开始，每天规划：\n- 发布时间\n- 内容主题\n- 内容类型\n- 目标平台\n- 创作要点\n\n用表格形式展示，并确保内容有节奏感（不要每天都发硬广）。",
+        "en": 'Create a {days}-day content calendar for the "{industry_cal}" industry starting from {start_date}:\nFor each day: time, topic, type, platform, key points.\nUse table format. Vary content types (not all promotional).',
+    },
+    "video": {
+        "zh": "请为以下视频创作{video_type}：\n\n主题：{video_topic}\n平台：{video_platform}\n时长：{video_duration}\n补充说明：{video_details}\n\n请提供：\n1. 开场钩子（前3秒抓住观众）\n2. 主体内容（分段展示）\n3. 结尾CTA（引导互动）\n4. 配音建议（语速、语调）\n5. 画面建议（如有分镜）\n\n确保脚本口语化、有节奏感、适合{video_platform}平台风格。",
+        "en": "Create a {video_type} for a video:\n\nTopic: {video_topic}\nPlatform: {video_platform}\nDuration: {video_duration}\nDetails: {video_details}\n\nProvide:\n1. Opening hook (first 3 seconds)\n2. Main content (segmented)\n3. Closing CTA\n4. Voiceover suggestions\n5. Visual suggestions (if storyboard)\n\nMake it conversational and suited for {video_platform}.",
+    },
+    "xhs": {
+        "zh": "请为小红书创作一篇爆款{xhs_type}笔记：\n\n主题：{xhs_topic}\n风格：{xhs_style}\n关键词：{xhs_keywords}\n补充说明：{xhs_details}\n\n请提供：\n1. **爆款标题**（3个备选，含emoji，18字以内）\n2. **正文内容**（800-1200字，分段清晰）\n3. **标签推荐**（15-20个相关标签）\n4. **封面建议**（图片风格和构图）\n5. **发布时间建议**\n\n要求：\n- 标题吸引眼球，有数字或痛点\n- 正文有干货、有故事、有互动\n- 多用emoji，排版清晰\n- 结尾引导点赞收藏",
+        "en": "Create a viral Xiaohongshu {xhs_type} post:\n\nTopic: {xhs_topic}\nStyle: {xhs_style}\nKeywords: {xhs_keywords}\nDetails: {xhs_details}\n\nProvide:\n1. **3 viral title options** (with emoji, under 18 chars)\n2. **Main content** (800-1200 words, well-structured)\n3. **15-20 hashtags**\n4. **Cover image suggestion**\n5. **Best posting time**\n\nRequirements:\n- Eye-catching titles with numbers or pain points\n- Useful content with stories and engagement\n- Use emojis, clear formatting\n- End with call-to-action for likes and saves",
+    },
+    "polish": {
+        "zh": "请对以下英文内容进行{en_level}：\n\n{en_content}\n\n润色风格：{en_style}\n特殊要求：{en_focus}\n\n请提供：\n1. **润色后的内容**（完整版本）\n2. **修改说明**（列出主要修改点和原因）\n3. **语法检查**（如有错误请指出）\n4. **表达建议**（提升地道性的建议）\n\n确保保持原意，同时提升表达质量。",
+        "en": "Apply {en_level} to the following English text:\n\n{en_content}\n\nStyle: {en_style}\nSpecial requirements: {en_focus}\n\nProvide:\n1. **Polished version** (complete)\n2. **Change notes** (list key changes and reasons)\n3. **Grammar check** (flag any errors)\n4. **Expression suggestions** (improve naturalness)\n\nPreserve the original meaning while improving quality.",
+    },
+    "seo": {
+        "zh": "请对以下内容进行全面的 SEO 分析：\n\n{input_content}\n\n请提供：\n1. **关键词分析**：核心关键词、长尾关键词建议\n2. **标题优化**：标题长度、吸引力、关键词包含情况\n3. **内容结构**：段落划分、标题层级、可读性\n4. **Meta 描述**：建议的 meta description\n5. **SEO 评分**：0-100分，附改进建议\n6. **竞品关键词**：相关热门搜索词\n\n用清晰的结构展示，包含具体的优化建议。",
+        "en": "Perform comprehensive SEO analysis on:\n\n{input_content}\n\nProvide:\n1. **Keyword analysis**: core + long-tail keywords\n2. **Title optimization**: length, appeal, keyword inclusion\n3. **Content structure**: paragraphs, headings, readability\n4. **Meta description**: suggested\n5. **SEO score**: 0-100 with improvement tips\n6. **Competitor keywords**: related popular searches\nUse clear structure with specific optimization advice.",
+    },
+    "data": {
+        "zh": "请对以下内容进行{analysis_type}：\n\n{data_text}\n\n请提供：\n1. 关键发现\n2. 数据解读\n3. 趋势/模式识别\n4. 可执行建议\n\n用清晰的结构和表格展示结果。",
+        "en": "Perform {analysis_type} on the following:\n\n{data_text}\n\nProvide:\n1. Key findings\n2. Data interpretation\n3. Trends/patterns\n4. Actionable recommendations\nUse clear structure and tables.",
+    },
+}
+
+def prompt(key: str, **kwargs) -> str:
+    lang = st.session_state.get("lang", "zh")
+    template = P.get(key, {}).get(lang, P.get(key, {}).get("en", ""))
+    return template.format(**kwargs)
+
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
 db = SqliteDb(db_file="agents.db")
@@ -471,9 +512,9 @@ def main():
                 st.error(t("error_api_key")); return
             with st.spinner(t("creating")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f"Create a complete content plan:\n\nTopic: {topic}\nPlatform: {platform}\nType: {content_type}\nTone: {tone}\nAdditional: {additional_info}\n\nCollaborate:\n1. Web Researcher: search trends\n2. Copywriter: write copy\n3. Social Media Expert: optimize for {platform}\n4. SEO Expert: add SEO suggestions\n\nOutput ready-to-use {content_type} content."
+                p = prompt("create", topic=topic, platform=platform, content_type=content_type, tone=tone, additional_info=additional_info)
                 try:
-                    result = agents["content_team"].run(prompt, stream=False)
+                    result = agents["content_team"].run(p, stream=False)
                     st.divider()
                     st.subheader(t("result_title"))
                     st.markdown(result.content)
@@ -491,9 +532,9 @@ def main():
                 st.error(t("error_api_key")); return
             with st.spinner(t("analyzing")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f'Analyze current trends in the "{industry}" industry:\n1. Search latest industry news\n2. Summarize 5-10 key trends\n3. Analyze viral potential\n4. Give content creation suggestions\nUse clear lists and tables.'
+                p = prompt("trend", industry=industry)
                 try:
-                    result = agents["web_researcher"].run(prompt, stream=False)
+                    result = agents["web_researcher"].run(p, stream=False)
                     st.subheader(t("trend_result"))
                     st.markdown(result.content)
                     save_history(t("tab2").split(" ", 1)[-1], industry, result.content)
@@ -515,9 +556,9 @@ def main():
                 st.error(t("error_api_key")); return
             with st.spinner(t("generating_calendar")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f'Create a {days}-day content calendar for the "{industry_cal}" industry starting from {start_date}:\nFor each day: time, topic, type, platform, key points.\nUse table format. Vary content types (not all promotional).'
+                p = prompt("calendar", industry_cal=industry_cal, days=days, start_date=start_date)
                 try:
-                    result = agents["copywriter"].run(prompt, stream=False)
+                    result = agents["copywriter"].run(p, stream=False)
                     st.subheader(t("calendar_result"))
                     st.markdown(result.content)
                     save_history(t("tab3").split(" ", 1)[-1], f"{industry_cal} - {days}d", result.content)
@@ -563,9 +604,9 @@ def main():
                 st.warning(t("error_input_required")); return
             with st.spinner(t("analyzing_data")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f"Perform {analysis_type} on the following:\n\n{data_text}\n\nProvide:\n1. Key findings\n2. Data interpretation\n3. Trends/patterns\n4. Actionable recommendations\nUse clear structure and tables."
+                p = prompt("data", analysis_type=analysis_type, data_text=data_text)
                 try:
-                    result = agents["data_analyst"].run(prompt, stream=False)
+                    result = agents["data_analyst"].run(p, stream=False)
                     st.subheader(t("data_result"))
                     st.markdown(result.content)
                     save_history(t("tab5").split(" ", 1)[-1], analysis_type, result.content)
@@ -587,9 +628,9 @@ def main():
                 st.warning(t("error_input_required")); return
             with st.spinner(t("generating_video")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f"Create a {video_type} for a video:\n\nTopic: {video_topic}\nPlatform: {video_platform}\nDuration: {video_duration}\nDetails: {video_details}\n\nProvide:\n1. Opening hook (first 3 seconds)\n2. Main content (segmented)\n3. Closing CTA\n4. Voiceover suggestions\n5. Visual suggestions (if storyboard)\n\nMake it conversational and suited for {video_platform}."
+                p = prompt("video", video_type=video_type, video_topic=video_topic, video_platform=video_platform, video_duration=video_duration, video_details=video_details)
                 try:
-                    result = agents["video_scriptwriter"].run(prompt, stream=False)
+                    result = agents["video_scriptwriter"].run(p, stream=False)
                     st.subheader(t("video_result"))
                     st.markdown(result.content)
                     st.download_button(t("btn_download_video"), data=result.content, file_name=f"video_script_{datetime.now().strftime('%Y%m%d')}.md", mime="text/markdown")
@@ -612,9 +653,9 @@ def main():
                 st.warning(t("error_input_required")); return
             with st.spinner(t("generating_xhs")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f"Create a viral Xiaohongshu {xhs_type} post:\n\nTopic: {xhs_topic}\nStyle: {xhs_style}\nKeywords: {xhs_keywords}\nDetails: {xhs_details}\n\nProvide:\n1. **3 viral title options** (with emoji, under 18 chars)\n2. **Main content** (800-1200 words, well-structured)\n3. **15-20 hashtags**\n4. **Cover image suggestion**\n5. **Best posting time**\n\nRequirements:\n- Eye-catching titles with numbers or pain points\n- Useful content with stories and engagement\n- Use emojis, clear formatting\n- End with call-to-action for likes and saves"
+                p = prompt("xhs", xhs_type=xhs_type, xhs_topic=xhs_topic, xhs_style=xhs_style, xhs_keywords=xhs_keywords, xhs_details=xhs_details)
                 try:
-                    result = agents["xiaohongshu_expert"].run(prompt, stream=False)
+                    result = agents["xiaohongshu_expert"].run(p, stream=False)
                     st.subheader(t("xhs_result"))
                     st.markdown(result.content)
                     st.download_button(t("btn_download_xhs"), data=result.content, file_name=f"xhs_{datetime.now().strftime('%Y%m%d')}.md", mime="text/markdown")
@@ -639,9 +680,9 @@ def main():
                 st.warning(t("error_input_required")); return
             with st.spinner(t("polishing")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f"Apply {en_level} to the following English text:\n\n{en_content}\n\nStyle: {en_style}\nSpecial requirements: {en_focus}\n\nProvide:\n1. **Polished version** (complete)\n2. **Change notes** (list key changes and reasons)\n3. **Grammar check** (flag any errors)\n4. **Expression suggestions** (improve naturalness)\n\nPreserve the original meaning while improving quality."
+                p = prompt("polish", en_level=en_level, en_content=en_content, en_style=en_style, en_focus=en_focus)
                 try:
-                    result = agents["english_polisher"].run(prompt, stream=False)
+                    result = agents["english_polisher"].run(p, stream=False)
                     st.subheader(t("polish_result"))
                     st.markdown(result.content)
                     st.download_button(t("btn_download_polish"), data=result.content, file_name=f"polished_{datetime.now().strftime('%Y%m%d')}.md", mime="text/markdown")
@@ -666,9 +707,9 @@ def main():
                 st.warning(t("error_input_required")); return
             with st.spinner(t("analyzing_seo")):
                 agents = get_agents(openai_api_key, api_base_url)
-                prompt = f"Perform comprehensive SEO analysis on:\n\n{input_content}\n\nProvide:\n1. **Keyword analysis**: core + long-tail keywords\n2. **Title optimization**: length, appeal, keyword inclusion\n3. **Content structure**: paragraphs, headings, readability\n4. **Meta description**: suggested\n5. **SEO score**: 0-100 with improvement tips\n6. **Competitor keywords**: related popular searches\nUse clear structure with specific optimization advice."
+                p = prompt("seo", input_content=input_content)
                 try:
-                    result = agents["seo_expert"].run(prompt, stream=False)
+                    result = agents["seo_expert"].run(p, stream=False)
                     st.subheader(t("seo_result"))
                     st.markdown(result.content)
                     save_history(t("tab9").split(" ", 1)[-1], input_content[:100], result.content)
