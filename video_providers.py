@@ -29,6 +29,14 @@ class VideoProvider(ABC):
         """查询任务状态"""
         pass
 
+    def avatar_video(self, avatar_id: str, script: str, voice_id: Optional[str] = None) -> str:
+        """数字分身视频生成（仅部分平台支持）"""
+        raise NotImplementedError("This provider does not support avatar video generation")
+
+    def get_avatars(self) -> list:
+        """获取可用的数字分身列表（仅部分平台支持）"""
+        raise NotImplementedError("This provider does not support avatar listing")
+
     def wait_for_video(self, task_id: str, timeout: int = 300, poll_interval: int = 5) -> dict:
         """等待视频生成完成"""
         start_time = time.time()
@@ -180,6 +188,41 @@ class KlingProvider(VideoProvider):
             "video_url": task_data.get("task_result", {}).get("videos", [{}])[0].get("url"),
             "error": task_data.get("task_status_msg")
         }
+
+    def get_avatars(self) -> list:
+        """获取可灵数字分身列表"""
+        response = requests.get(f"{self.base_url}/digital-human/avatars", headers=self.headers, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        if data.get("code") != 0:
+            return []
+        return data.get("data", {}).get("avatars", [])
+
+    def avatar_video(
+        self,
+        avatar_id: str,
+        script: str,
+        voice_id: Optional[str] = None,
+        aspect_ratio: str = "16:9"
+    ) -> str:
+        """数字分身视频生成"""
+        payload = {
+            "avatar_id": avatar_id,
+            "script": script,
+            "voice_id": voice_id or "default",
+            "aspect_ratio": aspect_ratio
+        }
+        response = requests.post(
+            f"{self.base_url}/digital-human/generations",
+            headers=self.headers,
+            json=payload,
+            timeout=30
+        )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("code") != 0:
+            raise Exception(data.get("message", "Kling digital human API error"))
+        return data.get("data", {}).get("task_id")
 
 
 # ── 智谱 CogVideoX ────────────────────────────────────────────────────────────

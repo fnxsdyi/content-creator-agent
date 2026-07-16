@@ -171,7 +171,7 @@ T = {
         "provider_warning": "⚠️ 请配置 {provider} API Key（用于视频生成）",
         "provider_not_configured": "未配置 API Key",
         "video_mode_label": "制作模式",
-        "video_modes": ["文字转视频", "图片转视频", "脚本转视频"],
+        "video_modes": ["文字转视频", "图片转视频", "脚本转视频", "数字分身"],
         "video_text_label": "视频描述",
         "video_text_placeholder": "输入视频的描述文字，越详细效果越好...\n例如：一个阳光明媚的海滩，海浪轻轻拍打着沙滩，远处有几棵棕榈树",
         "video_image_label": "上传首帧图片",
@@ -194,6 +194,12 @@ T = {
         "segment_prompt_label": "本段视频描述",
         "segment_prompt_placeholder": "描述这一段视频的内容...",
         "script_video_info": "💡 脚本转视频：输入多个视频片段描述，系统将逐段生成并拼接成完整视频。",
+        "avatar_select_label": "选择数字分身",
+        "avatar_script_label": "数字分身要说的话",
+        "avatar_script_placeholder": "输入数字分身要说的内容...\n例如：大家好，我是AI助手，今天给大家介绍一款新产品...",
+        "avatar_loading": "正在加载数字分身列表...",
+        "avatar_no_available": "当前平台不支持数字分身功能，请选择可灵 (Kling) 平台",
+        "avatar_not_configured": "请先配置可灵 API Key 以使用数字分身功能",
         # Errors
         "error_api_key": "请先输入 API Key",
         "error_input_required": "请输入内容",
@@ -360,7 +366,7 @@ T = {
         "provider_warning": "⚠️ Please configure {provider} API Key (for video generation)",
         "provider_not_configured": "API Key not configured",
         "video_mode_label": "Production Mode",
-        "video_modes": ["Text to Video", "Image to Video", "Script to Video"],
+        "video_modes": ["Text to Video", "Image to Video", "Script to Video", "Digital Avatar"],
         "video_text_label": "Video Description",
         "video_text_placeholder": "Enter video description, more details = better results...\nExample: A sunny beach with gentle waves, palm trees in the distance",
         "video_image_label": "Upload First Frame Image",
@@ -383,6 +389,12 @@ T = {
         "segment_prompt_label": "Video Description for This Segment",
         "segment_prompt_placeholder": "Describe the content of this video segment...",
         "script_video_info": "💡 Script to Video: Enter multiple video segment descriptions, and the system will generate each segment and combine them into a complete video.",
+        "avatar_select_label": "Select Digital Avatar",
+        "avatar_script_label": "What the avatar will say",
+        "avatar_script_placeholder": "Enter the script for the digital avatar...\nExample: Hello everyone, I'm your AI assistant. Today I'll introduce a new product...",
+        "avatar_loading": "Loading digital avatars...",
+        "avatar_no_available": "Current platform does not support digital avatars. Please select Kling platform.",
+        "avatar_not_configured": "Please configure Kling API Key first to use digital avatar feature",
         # Errors
         "error_api_key": "Please enter your API Key first",
         "error_input_required": "Please enter content",
@@ -1033,7 +1045,7 @@ def main():
                                 st.error(t("error_generic", error=str(e)))
 
             # ── Mode: Script to Video ──────────────────────────────────────
-            else:
+            elif video_mode == t("video_modes")[2]:
                 st.info(t("script_video_info"))
 
                 num_segments = st.number_input(
@@ -1094,6 +1106,78 @@ def main():
                                     st.error(t("video_status_failed"))
                             except Exception as e:
                                 st.error(t("error_generic", error=str(e)))
+
+            # ── Mode: Digital Avatar ─────────────────────────────────────
+            else:
+                if selected_provider_key != "kling":
+                    st.warning(t("avatar_no_available"))
+                    st.info("数字分身功能目前仅支持可灵 (Kling) 平台。请在左侧边栏配置可灵 API Key。")
+                else:
+                    st.info("🎭 数字分身：输入文字，让数字分身为你说话")
+
+                    # 加载数字分身列表
+                    with st.spinner(t("avatar_loading")):
+                        try:
+                            avatars = client.get_avatars()
+                        except Exception:
+                            avatars = []
+
+                    if not avatars:
+                        st.warning("未找到可用的数字分身。请先在可灵平台创建数字分身。")
+                        st.markdown("""
+**如何创建数字分身：**
+1. 访问 [可灵AI官网](https://klingai.com)
+2. 登录后进入"数字分身"功能
+3. 上传照片或视频，创建你的数字分身
+4. 创建完成后，返回此页面刷新即可看到
+                        """)
+                    else:
+                        # 选择数字分身
+                        avatar_options = {a["avatar_id"]: a.get("name", a["avatar_id"]) for a in avatars}
+                        selected_avatar = st.selectbox(
+                            t("avatar_select_label"),
+                            options=list(avatar_options.keys()),
+                            format_func=lambda x: avatar_options[x]
+                        )
+
+                        # 输入脚本
+                        avatar_script = st.text_area(
+                            t("avatar_script_label"),
+                            placeholder=t("avatar_script_placeholder"),
+                            height=150
+                        )
+
+                        if st.button(t("btn_generate_video"), type="primary", key="btn_avatar"):
+                            if not avatar_script:
+                                st.error(t("error_input_required"))
+                            else:
+                                with st.spinner(t("generating_video")):
+                                    try:
+                                        import requests as req
+                                        task_id = client.avatar_video(
+                                            avatar_id=selected_avatar,
+                                            script=avatar_script,
+                                            aspect_ratio=aspect_ratio
+                                        )
+                                        status = client.wait_for_video(task_id)
+
+                                        if status.get("status") == "completed":
+                                            video_url = status.get("video_url")
+                                            st.subheader(t("video_result"))
+                                            st.video(video_url)
+                                            st.success(t("video_status_ready"))
+
+                                            st.download_button(
+                                                t("btn_download_video"),
+                                                data=req.get(video_url).content,
+                                                file_name=f"avatar_video_{task_id}.mp4",
+                                                mime="video/mp4"
+                                            )
+                                            save_history(t("tab11").split(" ", 1)[-1], f"Avatar: {avatar_script[:50]}", f"Video: {video_url}")
+                                        else:
+                                            st.error(t("video_status_failed"))
+                                    except Exception as e:
+                                        st.error(t("error_generic", error=str(e)))
 
 if __name__ == "__main__":
     main()
