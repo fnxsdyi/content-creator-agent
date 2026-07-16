@@ -159,11 +159,17 @@ T = {
         # Tab 11: Video Production
         "tab11": "🎥 视频制作",
         "video_gen_title": "🎥 AI 视频制作",
-        "video_gen_subtitle": "使用即梦 AI 生成短视频",
+        "video_gen_subtitle": "选择视频生成平台，输入内容即可生成短视频",
+        "video_provider_label": "选择平台",
         "jimeng_api_key_label": "即梦 API Key",
         "jimeng_api_key_placeholder": "输入即梦 API Key",
-        "jimeng_configured": "✅ 即梦 API Key 已配置",
-        "jimeng_warning": "⚠️ 请配置即梦 API Key（用于视频生成）",
+        "kling_api_key_label": "可灵 API Key",
+        "kling_api_key_placeholder": "输入可灵 API Key",
+        "cogvideox_api_key_label": "智谱 API Key",
+        "cogvideox_api_key_placeholder": "输入智谱 API Key",
+        "provider_configured": "✅ {provider} API Key 已配置",
+        "provider_warning": "⚠️ 请配置 {provider} API Key（用于视频生成）",
+        "provider_not_configured": "未配置 API Key",
         "video_mode_label": "制作模式",
         "video_modes": ["文字转视频", "图片转视频", "脚本转视频"],
         "video_text_label": "视频描述",
@@ -342,11 +348,17 @@ T = {
         # Tab 11: Video Production
         "tab11": "🎥 Video Production",
         "video_gen_title": "🎥 AI Video Production",
-        "video_gen_subtitle": "Generate short videos with Jimeng AI",
+        "video_gen_subtitle": "Select a video generation platform, enter content to generate videos",
+        "video_provider_label": "Select Platform",
         "jimeng_api_key_label": "Jimeng API Key",
         "jimeng_api_key_placeholder": "Enter Jimeng API Key",
-        "jimeng_configured": "✅ Jimeng API Key configured",
-        "jimeng_warning": "⚠️ Please configure Jimeng API Key (for video generation)",
+        "kling_api_key_label": "Kling API Key",
+        "kling_api_key_placeholder": "Enter Kling API Key",
+        "cogvideox_api_key_label": "CogVideoX API Key",
+        "cogvideox_api_key_placeholder": "Enter CogVideoX API Key",
+        "provider_configured": "✅ {provider} API Key configured",
+        "provider_warning": "⚠️ Please configure {provider} API Key (for video generation)",
+        "provider_not_configured": "API Key not configured",
         "video_mode_label": "Production Mode",
         "video_modes": ["Text to Video", "Image to Video", "Script to Video"],
         "video_text_label": "Video Description",
@@ -556,9 +568,16 @@ def main():
 
         st.divider()
 
-        # Jimeng API Key for video generation
+        # Video Generation API Keys
+        st.header("🎥 " + t("tab11").split(" ")[-1])
+
         if "jimeng_api_key" not in st.session_state:
             st.session_state.jimeng_api_key = ""
+        if "kling_api_key" not in st.session_state:
+            st.session_state.kling_api_key = ""
+        if "cogvideox_api_key" not in st.session_state:
+            st.session_state.cogvideox_api_key = ""
+
         jimeng_api_key = st.text_input(
             t("jimeng_api_key_label"),
             type="password",
@@ -568,10 +587,40 @@ def main():
         )
         if jimeng_api_key != st.session_state.jimeng_api_key:
             st.session_state.jimeng_api_key = jimeng_api_key
-        if jimeng_api_key:
-            st.success(t("jimeng_configured"))
+
+        kling_api_key = st.text_input(
+            t("kling_api_key_label"),
+            type="password",
+            value=st.session_state.kling_api_key,
+            key="kling_api_key_input",
+            placeholder=t("kling_api_key_placeholder")
+        )
+        if kling_api_key != st.session_state.kling_api_key:
+            st.session_state.kling_api_key = kling_api_key
+
+        cogvideox_api_key = st.text_input(
+            t("cogvideox_api_key_label"),
+            type="password",
+            value=st.session_state.cogvideox_api_key,
+            key="cogvideox_api_key_input",
+            placeholder=t("cogvideox_api_key_placeholder")
+        )
+        if cogvideox_api_key != st.session_state.cogvideox_api_key:
+            st.session_state.cogvideox_api_key = cogvideox_api_key
+
+        # 显示配置状态
+        any_configured = jimeng_api_key or kling_api_key or cogvideox_api_key
+        if any_configured:
+            configured = []
+            if jimeng_api_key:
+                configured.append("即梦")
+            if kling_api_key:
+                configured.append("可灵")
+            if cogvideox_api_key:
+                configured.append("智谱")
+            st.success(f"✅ 已配置: {', '.join(configured)}")
         else:
-            st.warning(t("jimeng_warning"))
+            st.warning("⚠️ 请配置至少一个视频生成平台的 API Key")
 
         st.divider()
         st.header(t("agents_info"))
@@ -830,18 +879,48 @@ def main():
         st.header(t("video_gen_title"))
         st.caption(t("video_gen_subtitle"))
 
-        jimeng_key = st.session_state.get("jimeng_api_key", "")
+        try:
+            from video_providers import get_provider, VIDEO_PROVIDERS
+        except ImportError:
+            st.error("video_providers.py 模块未找到，请确保文件存在。")
+            st.stop()
 
-        if not jimeng_key:
-            st.error(t("jimeng_warning"))
-            st.info("请在左侧边栏配置即梦 API Key。")
+        # 检查哪些平台已配置 API Key
+        jimeng_key = st.session_state.get("jimeng_api_key", "")
+        kling_key = st.session_state.get("kling_api_key", "")
+        cogvideox_key = st.session_state.get("cogvideox_api_key", "")
+
+        available_providers = []
+        if jimeng_key:
+            available_providers.append(("jimeng", "即梦 (Jimeng)"))
+        if kling_key:
+            available_providers.append(("kling", "可灵 (Kling)"))
+        if cogvideox_key:
+            available_providers.append(("cogvideox", "智谱 (CogVideoX)"))
+
+        if not available_providers:
+            st.warning("⚠️ 请在左侧边栏配置至少一个视频生成平台的 API Key")
+            st.info("支持的平台：即梦、可灵、智谱")
         else:
-            try:
-                from jimeng_client import JimengClient
-                client = JimengClient(jimeng_key)
-            except ImportError:
-                st.error("jimeng_client.py 模块未找到，请确保文件存在。")
-                st.stop()
+            # Platform selection
+            provider_names = [p[1] for p in available_providers]
+            provider_keys = [p[0] for p in available_providers]
+            selected_idx = st.selectbox(
+                t("video_provider_label"),
+                options=range(len(provider_names)),
+                format_func=lambda x: provider_names[x]
+            )
+            selected_provider_key = provider_keys[selected_idx]
+            provider_info = VIDEO_PROVIDERS[selected_provider_key]
+            st.caption(provider_info["description"])
+
+            # 获取对应的 API Key
+            api_key_map = {
+                "jimeng": jimeng_key,
+                "kling": kling_key,
+                "cogvideox": cogvideox_key
+            }
+            client = get_provider(selected_provider_key, api_key_map[selected_provider_key])
 
             # Mode selection
             video_mode = st.radio(
@@ -890,7 +969,7 @@ def main():
                                     st.download_button(
                                         t("btn_download_video"),
                                         data=req.get(video_url).content,
-                                        file_name=f"jimeng_video_{task_id}.mp4",
+                                        file_name=f"video_{task_id}.mp4",
                                         mime="video/mp4"
                                     )
                                     save_history(t("tab11").split(" ", 1)[-1], video_text[:100], f"Video: {video_url}")
@@ -944,7 +1023,7 @@ def main():
                                     st.download_button(
                                         t("btn_download_video"),
                                         data=req.get(video_url).content,
-                                        file_name=f"jimeng_video_{task_id}.mp4",
+                                        file_name=f"video_{task_id}.mp4",
                                         mime="video/mp4"
                                     )
                                     save_history(t("tab11").split(" ", 1)[-1], f"Image: {uploaded_image.name}", f"Video: {video_url}")
@@ -982,11 +1061,15 @@ def main():
                         with st.spinner(t("generating_video")):
                             try:
                                 import requests as req
-                                task_ids = client.script_to_video(
-                                    segments=valid_segments,
-                                    duration=duration_seconds,
-                                    aspect_ratio=aspect_ratio
-                                )
+                                # 逐段生成视频
+                                task_ids = []
+                                for seg in valid_segments:
+                                    task_id = client.text_to_video(
+                                        prompt=seg["prompt"],
+                                        duration=duration_seconds,
+                                        aspect_ratio=aspect_ratio
+                                    )
+                                    task_ids.append(task_id)
 
                                 st.info(f"已提交 {len(task_ids)} 个视频片段，正在逐段生成...")
 
