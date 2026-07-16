@@ -156,6 +156,38 @@ T = {
         "history_output": "输出：",
         "btn_clear_history": "🗑️ 清空历史",
         "no_history": "暂无历史记录",
+        # Tab 11: Video Production
+        "tab11": "🎥 视频制作",
+        "video_gen_title": "🎥 AI 视频制作",
+        "video_gen_subtitle": "使用即梦 AI 生成短视频",
+        "jimeng_api_key_label": "即梦 API Key",
+        "jimeng_api_key_placeholder": "输入即梦 API Key",
+        "jimeng_configured": "✅ 即梦 API Key 已配置",
+        "jimeng_warning": "⚠️ 请配置即梦 API Key（用于视频生成）",
+        "video_mode_label": "制作模式",
+        "video_modes": ["文字转视频", "图片转视频", "脚本转视频"],
+        "video_text_label": "视频描述",
+        "video_text_placeholder": "输入视频的描述文字，越详细效果越好...\n例如：一个阳光明媚的海滩，海浪轻轻拍打着沙滩，远处有几棵棕榈树",
+        "video_image_label": "上传首帧图片",
+        "video_image_help": "支持 JPG、PNG 格式，建议 16:9 比例",
+        "video_prompt_label": "视频提示词（可选）",
+        "video_prompt_placeholder": "补充视频的运动、风格等描述...",
+        "video_duration_label": "视频时长",
+        "video_durations": ["3秒", "5秒", "10秒"],
+        "video_aspect_label": "画面比例",
+        "video_aspects": ["16:9 横屏", "9:16 竖屏", "1:1 方形"],
+        "btn_generate_video": "🎬 生成视频",
+        "generating_video": "正在生成视频，请稍候（约1-3分钟）...",
+        "video_result": "🎬 视频预览",
+        "btn_download_video": "📥 下载视频",
+        "video_status_ready": "✅ 视频已就绪",
+        "video_status_processing": "⏳ 视频生成中...",
+        "video_status_failed": "❌ 视频生成失败",
+        "script_segments_label": "脚本段落数",
+        "segment": "段落",
+        "segment_prompt_label": "本段视频描述",
+        "segment_prompt_placeholder": "描述这一段视频的内容...",
+        "script_video_info": "💡 脚本转视频：输入多个视频片段描述，系统将逐段生成并拼接成完整视频。",
         # Errors
         "error_api_key": "请先输入 API Key",
         "error_input_required": "请输入内容",
@@ -307,6 +339,38 @@ T = {
         "history_output": "Output: ",
         "btn_clear_history": "🗑️ Clear History",
         "no_history": "No history yet",
+        # Tab 11: Video Production
+        "tab11": "🎥 Video Production",
+        "video_gen_title": "🎥 AI Video Production",
+        "video_gen_subtitle": "Generate short videos with Jimeng AI",
+        "jimeng_api_key_label": "Jimeng API Key",
+        "jimeng_api_key_placeholder": "Enter Jimeng API Key",
+        "jimeng_configured": "✅ Jimeng API Key configured",
+        "jimeng_warning": "⚠️ Please configure Jimeng API Key (for video generation)",
+        "video_mode_label": "Production Mode",
+        "video_modes": ["Text to Video", "Image to Video", "Script to Video"],
+        "video_text_label": "Video Description",
+        "video_text_placeholder": "Enter video description, more details = better results...\nExample: A sunny beach with gentle waves, palm trees in the distance",
+        "video_image_label": "Upload First Frame Image",
+        "video_image_help": "Supports JPG, PNG format, 16:9 aspect ratio recommended",
+        "video_prompt_label": "Video Prompt (Optional)",
+        "video_prompt_placeholder": "Add motion, style descriptions...",
+        "video_duration_label": "Video Duration",
+        "video_durations": ["3s", "5s", "10s"],
+        "video_aspect_label": "Aspect Ratio",
+        "video_aspects": ["16:9 Landscape", "9:16 Portrait", "1:1 Square"],
+        "btn_generate_video": "🎬 Generate Video",
+        "generating_video": "Generating video, please wait (approx. 1-3 minutes)...",
+        "video_result": "🎬 Video Preview",
+        "btn_download_video": "📥 Download Video",
+        "video_status_ready": "✅ Video Ready",
+        "video_status_processing": "⏳ Processing...",
+        "video_status_failed": "❌ Generation Failed",
+        "script_segments_label": "Number of Segments",
+        "segment": "Segment",
+        "segment_prompt_label": "Video Description for This Segment",
+        "segment_prompt_placeholder": "Describe the content of this video segment...",
+        "script_video_info": "💡 Script to Video: Enter multiple video segment descriptions, and the system will generate each segment and combine them into a complete video.",
         # Errors
         "error_api_key": "Please enter your API Key first",
         "error_input_required": "Please enter content",
@@ -491,6 +555,25 @@ def main():
             st.warning(t("api_warning"))
 
         st.divider()
+
+        # Jimeng API Key for video generation
+        if "jimeng_api_key" not in st.session_state:
+            st.session_state.jimeng_api_key = ""
+        jimeng_api_key = st.text_input(
+            t("jimeng_api_key_label"),
+            type="password",
+            value=st.session_state.jimeng_api_key,
+            key="jimeng_api_key_input",
+            placeholder=t("jimeng_api_key_placeholder")
+        )
+        if jimeng_api_key != st.session_state.jimeng_api_key:
+            st.session_state.jimeng_api_key = jimeng_api_key
+        if jimeng_api_key:
+            st.success(t("jimeng_configured"))
+        else:
+            st.warning(t("jimeng_warning"))
+
+        st.divider()
         st.header(t("agents_info"))
         st.info("\n".join([
             t("agent_web"), t("agent_copy"), t("agent_social"), t("agent_seo"),
@@ -498,10 +581,10 @@ def main():
         ]))
 
     # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
         t("tab1"), t("tab2"), t("tab3"), t("tab4"),
         t("tab5"), t("tab6"), t("tab7"), t("tab8"),
-        t("tab9"), t("tab10"),
+        t("tab9"), t("tab10"), t("tab11"),
     ])
 
     # ── Tab 1: Content Creation ───────────────────────────────────────────────
@@ -741,6 +824,193 @@ def main():
                 st.rerun()
         else:
             st.info(t("no_history"))
+
+    # ── Tab 11: Video Production ──────────────────────────────────────────────
+    with tab11:
+        st.header(t("video_gen_title"))
+        st.caption(t("video_gen_subtitle"))
+
+        jimeng_key = st.session_state.get("jimeng_api_key", "")
+
+        if not jimeng_key:
+            st.error(t("jimeng_warning"))
+            st.info("请在左侧边栏配置即梦 API Key。")
+        else:
+            try:
+                from jimeng_client import JimengClient
+                client = JimengClient(jimeng_key)
+            except ImportError:
+                st.error("jimeng_client.py 模块未找到，请确保文件存在。")
+                st.stop()
+
+            # Mode selection
+            video_mode = st.radio(
+                t("video_mode_label"),
+                t("video_modes"),
+                horizontal=True
+            )
+
+            # Common parameters
+            duration_options = {"3秒": 3, "5秒": 5, "10秒": 10}
+            duration = st.selectbox(t("video_duration_label"), options=t("video_durations"))
+            duration_seconds = duration_options[duration]
+
+            aspect_options = {"16:9 横屏": "16:9", "9:16 竖屏": "9:16", "1:1 方形": "1:1"}
+            aspect = st.selectbox(t("video_aspect_label"), options=t("video_aspects"))
+            aspect_ratio = aspect_options[aspect]
+
+            # ── Mode: Text to Video ────────────────────────────────────────
+            if video_mode == t("video_modes")[0]:
+                video_text = st.text_area(
+                    t("video_text_label"),
+                    placeholder=t("video_text_placeholder"),
+                    height=150
+                )
+
+                if st.button(t("btn_generate_video"), type="primary", key="btn_text2video"):
+                    if not video_text:
+                        st.error(t("error_input_required"))
+                    else:
+                        with st.spinner(t("generating_video")):
+                            try:
+                                import requests as req
+                                task_id = client.text_to_video(
+                                    prompt=video_text,
+                                    duration=duration_seconds,
+                                    aspect_ratio=aspect_ratio
+                                )
+                                status = client.wait_for_video(task_id)
+
+                                if status.get("status") == "completed":
+                                    video_url = status.get("video_url")
+                                    st.subheader(t("video_result"))
+                                    st.video(video_url)
+                                    st.success(t("video_status_ready"))
+
+                                    st.download_button(
+                                        t("btn_download_video"),
+                                        data=req.get(video_url).content,
+                                        file_name=f"jimeng_video_{task_id}.mp4",
+                                        mime="video/mp4"
+                                    )
+                                    save_history(t("tab11").split(" ", 1)[-1], video_text[:100], f"Video: {video_url}")
+                                else:
+                                    st.error(t("video_status_failed"))
+                            except Exception as e:
+                                st.error(t("error_generic", error=str(e)))
+
+            # ── Mode: Image to Video ───────────────────────────────────────
+            elif video_mode == t("video_modes")[1]:
+                uploaded_image = st.file_uploader(
+                    t("video_image_label"),
+                    type=["jpg", "jpeg", "png"],
+                    help=t("video_image_help")
+                )
+                if uploaded_image:
+                    st.image(uploaded_image, caption="首帧图片预览", use_container_width=True)
+
+                prompt = st.text_input(
+                    t("video_prompt_label"),
+                    placeholder=t("video_prompt_placeholder")
+                )
+
+                if st.button(t("btn_generate_video"), type="primary", key="btn_img2video"):
+                    if not uploaded_image:
+                        st.error(t("error_input_required"))
+                    else:
+                        with st.spinner(t("generating_video")):
+                            try:
+                                import requests as req
+                                import base64
+                                img_bytes = uploaded_image.read()
+                                b64 = base64.b64encode(img_bytes).decode()
+                                mime = "image/jpeg" if uploaded_image.type == "image/jpeg" else "image/png"
+                                image_url = f"data:{mime};base64,{b64}"
+
+                                task_id = client.image_to_video(
+                                    image_url=image_url,
+                                    prompt=prompt,
+                                    duration=duration_seconds,
+                                    aspect_ratio=aspect_ratio
+                                )
+                                status = client.wait_for_video(task_id)
+
+                                if status.get("status") == "completed":
+                                    video_url = status.get("video_url")
+                                    st.subheader(t("video_result"))
+                                    st.video(video_url)
+                                    st.success(t("video_status_ready"))
+
+                                    st.download_button(
+                                        t("btn_download_video"),
+                                        data=req.get(video_url).content,
+                                        file_name=f"jimeng_video_{task_id}.mp4",
+                                        mime="video/mp4"
+                                    )
+                                    save_history(t("tab11").split(" ", 1)[-1], f"Image: {uploaded_image.name}", f"Video: {video_url}")
+                                else:
+                                    st.error(t("video_status_failed"))
+                            except Exception as e:
+                                st.error(t("error_generic", error=str(e)))
+
+            # ── Mode: Script to Video ──────────────────────────────────────
+            else:
+                st.info(t("script_video_info"))
+
+                num_segments = st.number_input(
+                    t("script_segments_label"),
+                    min_value=1,
+                    max_value=10,
+                    value=3
+                )
+
+                segments = []
+                for i in range(num_segments):
+                    with st.expander(f"{t('segment')} {i + 1}"):
+                        segment_prompt = st.text_area(
+                            t("segment_prompt_label"),
+                            placeholder=t("segment_prompt_placeholder"),
+                            key=f"segment_prompt_{i}"
+                        )
+                        segments.append({"prompt": segment_prompt})
+
+                if st.button(t("btn_generate_video"), type="primary", key="btn_script2video"):
+                    valid_segments = [s for s in segments if s.get("prompt")]
+                    if not valid_segments:
+                        st.error(t("error_input_required"))
+                    else:
+                        with st.spinner(t("generating_video")):
+                            try:
+                                import requests as req
+                                task_ids = client.script_to_video(
+                                    segments=valid_segments,
+                                    duration=duration_seconds,
+                                    aspect_ratio=aspect_ratio
+                                )
+
+                                st.info(f"已提交 {len(task_ids)} 个视频片段，正在逐段生成...")
+
+                                results = client.wait_for_videos(task_ids)
+
+                                completed = [r for r in results if r.get("status") == "completed"]
+                                if completed:
+                                    st.subheader(t("video_result"))
+                                    for idx, r in enumerate(completed):
+                                        video_url = r.get("video_url")
+                                        if video_url:
+                                            st.markdown(f"**{t('segment')} {idx + 1}**")
+                                            st.video(video_url)
+
+                                    st.success(t("video_status_ready"))
+                                    save_history(
+                                        t("tab11").split(" ", 1)[-1],
+                                        f"Script: {len(valid_segments)} segments",
+                                        f"Videos: {len(completed)} generated"
+                                    )
+                                else:
+                                    st.error(t("video_status_failed"))
+                            except Exception as e:
+                                st.error(t("error_generic", error=str(e)))
 
 if __name__ == "__main__":
     main()
